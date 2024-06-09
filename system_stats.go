@@ -5,7 +5,7 @@ import (
 	"github.com/shirou/gopsutil/v3/disk"
 	"github.com/shirou/gopsutil/v3/mem"
 	"github.com/shirou/gopsutil/v3/process"
-	"time"
+	"os"
 )
 
 func getSystemStats(showCPU bool, showRAM bool, showDisk bool, showProcs bool) (*SystemStats, error) {
@@ -14,33 +14,33 @@ func getSystemStats(showCPU bool, showRAM bool, showDisk bool, showProcs bool) (
 	}
 
 	// get timestamp to calculate how long execution took
-	start := time.Now()
+	// start := time.Now()
 	memStats, err := getRAMStats(showRAM)
 	if err != nil {
 		return nil, err
 	}
-	println(fmt.Sprintf("RAM stats took %v", time.Since(start)))
-	start = time.Now()
+	// println(fmt.Sprintf("RAM stats took %v", time.Since(start)))
+	// start = time.Now()
 
 	cpuStats, err := getCPUStats(showCPU)
 	if err != nil {
 		return nil, err
 	}
-	println(fmt.Sprintf("CPU stats took %v", time.Since(start)))
-	start = time.Now()
+	// println(fmt.Sprintf("CPU stats took %v", time.Since(start)))
+	// start = time.Now()
 
 	diskStats, err := getDiskStats(showDisk)
 	if err != nil {
 		return nil, err
 	}
-	println(fmt.Sprintf("Disk stats took %v", time.Since(start)))
-	start = time.Now()
+	// println(fmt.Sprintf("Disk stats took %v", time.Since(start)))
+	// start = time.Now()
 
 	procs, err := getProcesses(showProcs)
 	if err != nil {
 		return nil, err
 	}
-	println(fmt.Sprintf("Process stats took %v", time.Since(start)))
+	// println(fmt.Sprintf("Process stats took %v", time.Since(start)))
 
 	return &SystemStats{
 		RAM:   memStats,
@@ -98,6 +98,10 @@ func getDiskStats(shown bool) (*[]DiskStats, error) {
 	return &diskStats, nil
 }
 
+func getCurrentUID() int {
+	return os.Getuid()
+}
+
 func getProcesses(shown bool) (*[]Processes, error) {
 	if !shown {
 		return nil, nil
@@ -110,27 +114,37 @@ func getProcesses(shown bool) (*[]Processes, error) {
 
 	var processes = &[]Processes{}
 	for _, p := range procs {
+		var error = false
+		user, _ := p.Uids()
+
 		name, err := p.Name()
 		if err != nil {
+			error = true
+			//println("Name error - not running as root?")
 			continue
 		}
 
 		pid := p.Pid
 		mem, err := p.MemoryInfo()
 		if err != nil {
+			error = true
+			//println("Memory error - not running as root?")
 			continue
 		}
 
 		cpu, err := p.CPUPercent()
 		if err != nil {
+			error = true
+			//println("CPU error - not running as root?")
 			continue
 		}
 
 		proc := Processes{
-			Pid:  int(pid),
-			Name: name,
-			Ram:  mem.RSS,
-			Cpu:  cpu,
+			Pid:      int(pid),
+			Name:     name,
+			Ram:      mem.RSS,
+			Cpu:      cpu,
+			Killable: user[0] == int32(getCurrentUID()) && !error,
 		}
 
 		*processes = append(*processes, proc)

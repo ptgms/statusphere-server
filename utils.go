@@ -2,17 +2,20 @@ package main
 
 import (
 	"github.com/shirou/gopsutil/v3/cpu"
+	"github.com/shirou/gopsutil/v3/mem"
 	"os"
 	"runtime"
+	"time"
 )
 
-func getCPUInfo(cpuModel string) (CPUInfo, error) {
+func getCPUInfo(cpuModel string, count int) (CPUInfo, error) {
 	cpuInfo, err := cpu.Info()
 	if err != nil {
 		return CPUInfo{}, err
 	}
 
 	returnCPU := CPUInfo{
+		Count: count,
 		Brand: cpuModel,
 		Cores: 0,
 		Mhz:   0,
@@ -47,18 +50,32 @@ func getSystemInfo() (*SystemInfo, error) {
 	}
 
 	var cpu []CPUInfo
+	count := 1
 	for model := range cpuModels {
-		info, err := getCPUInfo(model)
+		info, err := getCPUInfo(model, count)
 		if err != nil {
 			return nil, err
 		}
 		cpu = append(cpu, info)
+		count++
+	}
+	// make uint64 var for RAM
+	var ram uint64
+	var swap uint64
+
+	vmem, err := mem.VirtualMemory()
+	if err == nil {
+		ram = vmem.Total
+		swap = vmem.SwapTotal
 	}
 
 	return &SystemInfo{
 		Hostname: host,
 		OS:       runtime.GOOS,
 		Kernel:   runtime.GOARCH,
+		Uptime:   int(time.Since(startTime).Seconds()),
+		RAM:      ram,
+		Swap:     swap,
 		CPU:      cpu,
 	}, nil
 }

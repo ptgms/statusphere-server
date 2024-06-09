@@ -7,6 +7,7 @@ import (
 	"github.com/gorilla/mux"
 	"github.com/gorilla/websocket"
 	"github.com/shirou/gopsutil/v3/cpu"
+	"github.com/shirou/gopsutil/v3/process"
 	"net/http"
 	"os"
 	"time"
@@ -18,6 +19,8 @@ var signingKey []byte
 var upgrader = websocket.Upgrader{}
 
 var connections = make(map[string]*logConnection)
+
+var startTime = time.Now()
 
 func loadKey() {
 	err := os.Chmod("key.key", 0600)
@@ -43,7 +46,7 @@ func generateKey(userID string) (string, error) {
 }
 
 func getTokenExpiration(tokenString string) (TokenStatus, error) {
-	println(tokenString)
+	// println(tokenString)
 	token, err := jwt.Parse(tokenString, func(token *jwt.Token) (interface{}, error) {
 		return signingKey, nil
 	})
@@ -78,6 +81,8 @@ func getCPULoop() {
 }
 
 func main() {
+	//testProcs()
+	//os.Exit(0)
 	loadKey()
 
 	if len(os.Args) > 1 {
@@ -111,6 +116,11 @@ func main() {
 	r.HandleFunc("/token", regenerateTokenHandler).Methods("GET")
 	r.HandleFunc("/token/exp", getTokenExpirationHandler).Methods("GET")
 
+	r.HandleFunc("/kill/{pid}", killProcessHandler).Methods("GET")
+	r.HandleFunc("/delete", deleteFileHandler).Methods("GET")
+
+	r.HandleFunc("/token/exp", getTokenExpirationHandler).Methods("GET")
+
 	r.Use(authMiddleware)
 
 	server := http.Server{
@@ -124,5 +134,19 @@ func main() {
 	fmt.Printf("Server listening on %s", server.Addr)
 	if err := server.ListenAndServe(); err != nil {
 		fmt.Println(err)
+	}
+}
+
+func testProcs() {
+	procs, err := process.Processes()
+	if err != nil {
+		return
+	}
+
+	for _, p := range procs {
+		// print process name and user
+		name, _ := p.Name()
+		user, _ := p.Uids()
+		fmt.Print(name, user[0])
 	}
 }

@@ -3,12 +3,13 @@ package main
 import (
 	"encoding/json"
 	"fmt"
+	"github.com/gorilla/mux"
 	"github.com/gorilla/websocket"
 	"github.com/hpcloud/tail"
-	"log"
 	"net/http"
 	"os"
 	"path/filepath"
+	"strconv"
 	"strings"
 
 	"github.com/golang-jwt/jwt/v5"
@@ -36,8 +37,8 @@ func authMiddleware(next http.Handler) http.Handler {
 			return
 		}
 
-		if claims, ok := token.Claims.(jwt.MapClaims); ok && token.Valid {
-			log.Println("Authenticated request for:", r.RequestURI, "User:", claims["user"])
+		if _, ok := token.Claims.(jwt.MapClaims); ok && token.Valid {
+			// log.Println("Authenticated request for:", r.RequestURI, "User:", claims["user"])
 		} else {
 			http.Error(w, "Unauthorized", http.StatusUnauthorized)
 			return
@@ -86,6 +87,46 @@ func statsHandler(w http.ResponseWriter, r *http.Request) {
 
 	w.Header().Set("Content-Type", "application/json")
 	json.NewEncoder(w).Encode(stats)
+}
+
+func killProcessHandler(w http.ResponseWriter, r *http.Request) {
+	vars := mux.Vars(r)
+
+	pid, err := strconv.Atoi(vars["pid"])
+	if err != nil {
+		http.Error(w, "Invalid PID", http.StatusBadRequest)
+		println(err.Error())
+		return
+	}
+	err = killProcess(pid)
+	if err != nil {
+		http.Error(w, fmt.Sprintf("Error killing process: %v", err), http.StatusInternalServerError)
+		return
+	}
+	w.Write([]byte("OK"))
+
+}
+
+func deleteFileHandler(w http.ResponseWriter, r *http.Request) {
+	inputPath := r.Header.Get("path")
+	if inputPath == "" {
+		http.Error(w, "Missing file path", http.StatusBadRequest)
+		return
+	}
+
+	absPath, err := filepath.Abs(inputPath)
+	if err != nil {
+		http.Error(w, "Could not resolve absolute path: "+err.Error(), http.StatusInternalServerError)
+		return
+	}
+
+	err = os.Remove(absPath)
+	if err != nil {
+		http.Error(w, "Could not delete file: "+err.Error(), http.StatusInternalServerError)
+		return
+	}
+
+	w.Write([]byte("OK"))
 }
 
 func infoHandler(w http.ResponseWriter, _ *http.Request) {

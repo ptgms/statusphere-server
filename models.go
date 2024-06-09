@@ -21,10 +21,11 @@ type RamStats struct {
 }
 
 type Processes struct {
-	Pid  int     `json:"pid"`
-	Name string  `json:"name"`
-	Ram  uint64  `json:"ram"`
-	Cpu  float64 `json:"cpu"`
+	Pid      int     `json:"pid"`
+	Name     string  `json:"name"`
+	Ram      uint64  `json:"ram"`
+	Cpu      float64 `json:"cpu"`
+	Killable bool    `json:"killable"`
 }
 
 type CpuStats struct {
@@ -43,10 +44,14 @@ type SystemInfo struct {
 	Hostname string    `json:"hostname"`
 	OS       string    `json:"os"`
 	Kernel   string    `json:"kernel"`
+	Uptime   int       `json:"uptime"`
+	RAM      uint64    `json:"ram"`
+	Swap     uint64    `json:"swap"`
 	CPU      []CPUInfo `json:"cpu"`
 }
 
 type CPUInfo struct {
+	Count int     `json:"count"`
 	Brand string  `json:"brand"`
 	Cores int     `json:"cores"`
 	Mhz   float64 `json:"mhz"`
