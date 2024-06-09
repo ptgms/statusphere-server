@@ -78,3 +78,18 @@ type logConnection struct {
 	file *os.File
 	tail *tail.Tail
 }
+
+// MARK: Config files
+
+type ConfigFile struct {
+	KeyPath  string `json:"key_path"`
+	IsDomain bool   `json:"is_domain"`
+	IP       string `json:"ip"`
+	Port     string `json:"port"`
+}
+
+type ConfigImportFile struct {
+	Token string `json:"token"`
+	IP    string `json:"ip"`
+	Port  string `json:"port"`
+}

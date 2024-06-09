@@ -5,6 +5,7 @@ import (
 	"github.com/shirou/gopsutil/v3/mem"
 	"os"
 	"runtime"
+	"strings"
 	"time"
 )
 
@@ -16,7 +17,7 @@ func getCPUInfo(cpuModel string, count int) (CPUInfo, error) {
 
 	returnCPU := CPUInfo{
 		Count: count,
-		Brand: cpuModel,
+		Brand: strings.Trim(cpuModel, " "),
 		Cores: 0,
 		Mhz:   0,
 	}

@@ -2,3 +2,5 @@
 /key.key
 /statusphere.exe
 /keys/*
+/config.json
+/connection-config.json

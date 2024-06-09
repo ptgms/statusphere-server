@@ -144,7 +144,7 @@ func getProcesses(shown bool) (*[]Processes, error) {
 			Name:     name,
 			Ram:      mem.RSS,
 			Cpu:      cpu,
-			Killable: user[0] == int32(getCurrentUID()) && !error,
+			Killable: len(user) > 0 && user[0] == int32(getCurrentUID()) && !error,
 		}
 
 		*processes = append(*processes, proc)
@@ -160,7 +160,7 @@ func getDiskStatsForPath(diskPath string) (DiskStats, error) {
 	}
 
 	if diskStat.Total == 0 {
-		return DiskStats{}, fmt.Errorf("Disk not found")
+		return DiskStats{}, fmt.Errorf("disk not found")
 	}
 
 	return DiskStats{
